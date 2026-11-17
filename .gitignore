@@ -42,3 +42,9 @@ next-env.d.ts
 
 # contoh variabel lingkungan boleh ikut git
 !.env.example
+!.env.production
+
+# OpenNext / Cloudflare
+.open-next
+.wrangler
+.dev.vars*

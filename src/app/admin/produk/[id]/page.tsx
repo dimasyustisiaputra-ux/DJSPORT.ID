@@ -1,5 +1,3 @@
-/** Halaman admin boleh menunggu data login & database sebelum tampil. */
-export const instant = false;
 
 import Image from "next/image";
 import Link from "next/link";

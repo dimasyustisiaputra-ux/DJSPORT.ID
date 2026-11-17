@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // Catatan: cacheComponents sengaja TIDAK dipakai. Fitur itu membuat halaman macet di runtime
+  // Cloudflare Workers (OpenNext), tempat website ini di-hosting.
   images: {
     // Foto produk disimpan di Supabase Storage
     remotePatterns: [

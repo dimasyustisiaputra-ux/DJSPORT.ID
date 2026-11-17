@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 import { normalisasiNomorWa } from "@/lib/whatsapp";
 
@@ -20,7 +20,7 @@ export async function simpanPengaturan(_prev: PengaturanState, formData: FormDat
     .update({ whatsapp_number: nomor, whatsapp_greeting: greeting, updated_at: new Date().toISOString() })
     .eq("id", true);
   if (error) return { error: error.message };
-  updateTag("settings");
+  revalidatePath("/", "layout"); // segarkan seluruh halaman publik
   revalidatePath("/admin/pengaturan");
   return { ok: nomor ? `Disimpan. Tombol WhatsApp akan mengarah ke +${nomor}.` : "Disimpan. Nomor kosong, jadi tombol WhatsApp disembunyikan." };
 }

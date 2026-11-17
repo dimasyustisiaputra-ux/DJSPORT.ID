@@ -2,16 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getCategories, getCategoryBySlug, getProducts } from "@/lib/catalog";
+import { getCategoryBySlug, getProducts } from "@/lib/catalog";
 import { produkDiKategori } from "@/lib/category-match";
 import { ProductGrid } from "@/components/product-grid";
-
-export async function generateStaticParams() {
-  const tree = await getCategories();
-  const slugs = tree.flatMap((c) => [c.slug, ...c.children.map((s) => s.slug)]);
-  // Cache Components butuh minimal satu parameter; slug ini akan menghasilkan 404.
-  return slugs.length ? slugs.map((slug) => ({ slug })) : [{ slug: "belum-ada-kategori" }];
-}
 
 export async function generateMetadata({ params }: PageProps<"/kategori/[slug]">): Promise<Metadata> {
   const { slug } = await params;

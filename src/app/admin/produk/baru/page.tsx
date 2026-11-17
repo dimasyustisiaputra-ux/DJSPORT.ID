@@ -1,5 +1,3 @@
-/** Halaman admin boleh menunggu data login & database sebelum tampil. */
-export const instant = false;
 
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/admin";

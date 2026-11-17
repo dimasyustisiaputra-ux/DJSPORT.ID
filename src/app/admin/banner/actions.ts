@@ -1,13 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin";
 
 export type BannerState = { error?: string; ok?: string };
 
 function segarkan() {
-  updateTag("banners");
+  revalidatePath("/", "layout"); // segarkan seluruh halaman publik
   revalidatePath("/admin/banner");
 }
 

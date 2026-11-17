@@ -2,16 +2,9 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getProductBySlug, getProducts } from "@/lib/catalog";
+import { getProductBySlug } from "@/lib/catalog";
 import { ProductView } from "@/components/product-view";
 import { getSiteSettings } from "@/lib/settings";
-
-// Produk yang sudah ada di-prerender; produk baru dibuat saat pertama dikunjungi.
-export async function generateStaticParams() {
-  const products = await getProducts();
-  // Cache Components butuh minimal satu parameter; slug ini akan menghasilkan 404.
-  return products.length ? products.map((p) => ({ slug: p.slug })) : [{ slug: "belum-ada-produk" }];
-}
 
 export async function generateMetadata({ params }: PageProps<"/produk/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -19,7 +12,7 @@ export async function generateMetadata({ params }: PageProps<"/produk/[slug]">):
   if (!p) return { title: "Produk tidak ditemukan — DJSport" };
   return {
     title: `${p.name} — DJSport`,
-    description: p.description?.slice(0, 160) ?? `Beli ${p.name} di DJSport.`,
+    description: p.description?.slice(0, 160) ?? `Harga dan detail ${p.name} di DJSport.`,
     openGraph: p.image ? { images: [p.image] } : undefined,
   };
 }

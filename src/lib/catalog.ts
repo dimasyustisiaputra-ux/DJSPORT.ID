@@ -1,14 +1,11 @@
-import { cacheLife, cacheTag } from "next/cache";
+import { cache } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 
 export type Category = { id: string; name: string; slug: string };
 export type CategoryNode = Category & { show_in_nav: boolean; children: (Category & { show_in_nav: boolean })[] };
 
 /** Kategori utama beserta sub-kategorinya (untuk navbar dropdown), sesuai urutan di admin. */
-export async function getCategories(): Promise<CategoryNode[]> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("catalog");
+async function _getCategories(): Promise<CategoryNode[]> {
   const { data, error } = await createPublicClient()
     .from("categories")
     .select("id, name, slug, parent_id, show_in_nav")
@@ -122,10 +119,7 @@ function olah(p: RawProduct): ProductDetail {
 }
 
 /** Semua produk yang tampil di toko, terbaru dulu. */
-export async function getProducts(): Promise<ProductCard[]> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("catalog");
+async function _getProducts(): Promise<ProductCard[]> {
   const { data, error } = await createPublicClient()
     .from("products")
     .select(SELECT_PRODUK)
@@ -138,10 +132,7 @@ export async function getProducts(): Promise<ProductCard[]> {
   );
 }
 
-export async function getProductBySlug(slug: string): Promise<ProductDetail | null> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("catalog");
+async function _getProductBySlug(slug: string): Promise<ProductDetail | null> {
   const { data, error } = await createPublicClient()
     .from("products")
     .select(SELECT_PRODUK)
@@ -167,10 +158,7 @@ export type Banner = {
 };
 
 /** Banner aktif yang sedang dalam periode tayang. Di-cache beberapa menit. */
-export async function getActiveBanners(): Promise<Banner[]> {
-  "use cache";
-  cacheLife("minutes");
-  cacheTag("banners");
+async function _getActiveBanners(): Promise<Banner[]> {
   const now = new Date().toISOString();
   const { data, error } = await createPublicClient()
     .from("banners")
@@ -182,3 +170,9 @@ export async function getActiveBanners(): Promise<Banner[]> {
   if (error) throw error;
   return data as Banner[];
 }
+
+// Dibungkus cache() React: data yang sama hanya diambil sekali per permintaan halaman.
+export const getCategories = cache(_getCategories);
+export const getProducts = cache(_getProducts);
+export const getProductBySlug = cache(_getProductBySlug);
+export const getActiveBanners = cache(_getActiveBanners);

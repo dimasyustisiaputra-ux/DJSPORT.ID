@@ -1,13 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { parseRupiah, requireAdmin, slugify } from "@/lib/admin";
 
 export type ActionState = { error?: string; ok?: string };
 
 function segarkan(productId?: string) {
-  updateTag("catalog"); // katalog publik
+  revalidatePath("/", "layout"); // segarkan seluruh halaman publik
   revalidatePath("/admin/produk");
   if (productId) revalidatePath(`/admin/produk/${productId}`);
 }

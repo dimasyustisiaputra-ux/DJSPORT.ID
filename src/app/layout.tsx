@@ -7,6 +7,9 @@ import { SiteFooter, SiteHeader } from "@/components/site-header";
 // jadi ketebalan yang dipakai disebutkan satu per satu (800 untuk judul besar).
 const poppins = Poppins({ variable: "--font-poppins", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
+// Semua halaman dirender saat dibuka, sehingga perubahan dari halaman admin langsung tampil.
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "DJSport — Perlengkapan Olahraga",
   description: "Katalog dan pricelist perlengkapan olahraga DJSport. Hubungi tim sales kami via WhatsApp untuk pemesanan.",

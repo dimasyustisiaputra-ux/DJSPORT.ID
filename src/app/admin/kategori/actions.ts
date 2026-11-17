@@ -1,12 +1,12 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { requireAdmin, slugify } from "@/lib/admin";
 
 export type KategoriState = { error?: string; ok?: string };
 
 function segarkan() {
-  updateTag("catalog"); // navbar, beranda, halaman kategori
+  revalidatePath("/", "layout"); // segarkan seluruh halaman publik
   revalidatePath("/admin/kategori");
 }
 
