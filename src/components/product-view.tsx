@@ -1,18 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ProductDetail } from "@/lib/catalog";
 import { rentangHarga, rupiah } from "@/lib/format";
 import { linkWhatsApp, type SiteSettings } from "@/lib/whatsapp";
+import { tambahKeKeranjang } from "@/lib/cart";
 
 export function ProductView({ product, settings }: { product: ProductDetail; settings: SiteSettings }) {
-  const [warna, setWarna] = useState<string | null>(
-    product.colors.find((c) => product.variants.some((v) => v.color_name === c.name && v.stock > 0))?.name ?? product.colors[0]?.name ?? null,
+  // Produk tanpa pilihan warna memakai warna kosong ("") di variannya
+  const [warna, setWarna] = useState<string>(
+    product.colors.find((c) => product.variants.some((v) => v.color_name === c.name && v.stock > 0))?.name ?? product.colors[0]?.name ?? "",
   );
   const [ukuran, setUkuran] = useState<string | null>(null);
   const [jumlah, setJumlah] = useState(1);
   const [fotoAktif, setFotoAktif] = useState(0);
+  const [pesan, setPesan] = useState<{ ok: boolean; teks: string } | null>(null);
 
   // Foto untuk warna terpilih (+ foto umum). Bila tidak ada, tampilkan semua.
   const foto = useMemo(() => {
@@ -21,7 +25,30 @@ export function ProductView({ product, settings }: { product: ProductDetail; set
   }, [product.images, warna]);
 
   const varianUkuran = (size: string) => product.variants.find((v) => v.color_name === warna && v.size === size);
-  const terpilih = ukuran ? varianUkuran(ukuran) : undefined;
+  // Produk tanpa ukuran: varian satu-satunya (ukuran kosong) langsung terpilih
+  const terpilih = ukuran ? varianUkuran(ukuran) : product.sizes.length === 0 ? varianUkuran("") : undefined;
+  const maksJumlah = terpilih?.dipesan ? Math.max(1, Math.min(99, terpilih.stock)) : 99;
+
+  function masukkanKeranjang() {
+    if (!terpilih) return setPesan({ ok: false, teks: product.sizes.length ? "Pilih ukuran terlebih dahulu." : "Produk ini belum bisa dipesan." });
+    if (!terpilih.dipesan) return setPesan({ ok: false, teks: "Warna ini dipesan lewat WhatsApp." });
+    if (terpilih.stock <= 0) return setPesan({ ok: false, teks: "Stok ukuran ini habis." });
+    tambahKeKeranjang(
+      {
+        key: terpilih.id,
+        productId: product.id,
+        slug: product.slug,
+        nama: product.name,
+        warna: terpilih.color_name,
+        ukuran: terpilih.size,
+        harga: terpilih.price,
+        image: (product.images.find((f) => f.color_name === terpilih.color_name) ?? product.images[0])?.url ?? null,
+      },
+      Math.min(jumlah, maksJumlah),
+    );
+    setPesan({ ok: true, teks: `${jumlah} × ${product.name}${terpilih.color_name ? ` (${terpilih.color_name}${terpilih.size ? `, ${terpilih.size}` : ""})` : terpilih.size ? ` (${terpilih.size})` : ""} masuk keranjang.` });
+  }
+  const warnaBisaDipesan = product.variants.some((v) => v.color_name === warna && v.dipesan);
   const hargaWarna = product.variants.filter((v) => v.color_name === warna).map((v) => v.price);
   const harga = terpilih
     ? rupiah(terpilih.price)
@@ -32,6 +59,7 @@ export function ProductView({ product, settings }: { product: ProductDetail; set
   function pilihWarna(nama: string) {
     setWarna(nama);
     setFotoAktif(0);
+    setPesan(null);
     // Pertahankan ukuran bila tersedia di warna baru
     if (ukuran) {
       const v = product.variants.find((x) => x.color_name === nama && x.size === ukuran);
@@ -136,6 +164,7 @@ export function ProductView({ product, settings }: { product: ProductDetail; set
                     onClick={() => {
                       setUkuran(s);
                       setJumlah(1);
+                      setPesan(null);
                     }}
                     aria-pressed={ukuran === s}
                     className={`min-w-12 rounded-md border px-3 py-2 text-sm font-semibold ${
@@ -159,26 +188,45 @@ export function ProductView({ product, settings }: { product: ProductDetail; set
           </p>
         )}
 
-        {settings.whatsappNumber && (
+        {(warnaBisaDipesan || settings.whatsappNumber) && (
           <>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="flex items-center rounded-md border border-line">
                 <button onClick={() => setJumlah((j) => Math.max(1, j - 1))} className="px-3 py-2.5 text-lg" aria-label="Kurangi jumlah">−</button>
                 <span className="w-10 text-center font-semibold" aria-live="polite">{jumlah}</span>
-                <button onClick={() => setJumlah((j) => j + 1)} className="px-3 py-2.5 text-lg" aria-label="Tambah jumlah">+</button>
+                <button onClick={() => setJumlah((j) => Math.min(maksJumlah, j + 1))} className="px-3 py-2.5 text-lg" aria-label="Tambah jumlah">+</button>
               </div>
-              <button
-                onClick={bukaWhatsApp}
-                className="flex flex-1 items-center justify-center gap-2 rounded-md bg-[#25D366] px-6 py-3 font-semibold text-white hover:bg-[#1ebe5a]"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z" />
-                </svg>
-                {product.inStock ? "Pesan via WhatsApp" : "Tanya via WhatsApp"}
-              </button>
+              {warnaBisaDipesan && (
+                <button onClick={masukkanKeranjang} className="brand-gradient flex-1 rounded-md px-6 py-3 font-semibold text-white">
+                  Tambah ke Keranjang
+                </button>
+              )}
+              {settings.whatsappNumber && (
+                <button
+                  onClick={bukaWhatsApp}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md px-6 py-3 font-semibold ${
+                    warnaBisaDipesan ? "border border-[#25D366] text-[#128C4B] hover:bg-[#25D366]/10" : "bg-[#25D366] text-white hover:bg-[#1ebe5a]"
+                  }`}
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z" />
+                  </svg>
+                  {warnaBisaDipesan ? "Tanya Sales" : product.inStock ? "Pesan via WhatsApp" : "Tanya via WhatsApp"}
+                </button>
+              )}
             </div>
+            {pesan && (
+              <div role="status" className={`mt-3 rounded-md px-3 py-2 text-sm ${pesan.ok ? "bg-green-50 text-green-800" : "bg-red-50 text-red-700"}`}>
+                {pesan.teks}
+                {pesan.ok && (
+                  <Link href="/keranjang" className="ml-2 font-semibold underline">Lihat keranjang</Link>
+                )}
+              </div>
+            )}
             <p className="mt-3 text-xs text-muted">
-              Pilihan warna, ukuran, dan jumlah Anda akan otomatis tertulis di pesan untuk tim sales DJSport.
+              {warnaBisaDipesan
+                ? "Pesan langsung lewat keranjang (tanpa daftar akun), atau tanyakan dulu ke tim sales lewat WhatsApp."
+                : "Pilihan warna, ukuran, dan jumlah Anda akan otomatis tertulis di pesan untuk tim sales DJSport."}
             </p>
           </>
         )}

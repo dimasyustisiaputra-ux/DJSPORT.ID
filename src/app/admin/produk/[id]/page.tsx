@@ -8,6 +8,8 @@ import { ProductForm, inputClass } from "@/components/admin/product-form";
 import { VariantGenerator } from "@/components/admin/variant-generator";
 import { ImageUploader } from "@/components/admin/image-uploader";
 import { ConfirmButton } from "@/components/admin/confirm-button";
+import { KonvexaLinkForm, type KxBaris } from "@/components/admin/konvexa-link-form";
+import { getKonvexaProduk, konvexaAktif } from "@/lib/konvexa";
 import { hapusFoto, hapusProduk, hapusVarian, jadikanFotoUtama, simpanVarian } from "../actions";
 
 export const metadata: Metadata = { title: "Ubah Produk — Admin DJSport" };
@@ -21,6 +23,7 @@ type Variant = {
   price: number | null;
   stock: number;
   is_active: boolean;
+  konvexa_produk_id: string | null;
 };
 
 const URUTAN_UKURAN = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL"];
@@ -36,9 +39,9 @@ export default async function UbahProdukPage({ params, searchParams }: PageProps
   const { supabase } = await requireAdmin();
 
   const [{ data: product }, { data: categories }, { data: variants }, { data: images }] = await Promise.all([
-    supabase.from("products").select("id, name, slug, description, category_id, base_price, is_active").eq("id", id).maybeSingle(),
+    supabase.from("products").select("id, name, slug, description, category_id, base_price, is_active, konvexa_produk_id").eq("id", id).maybeSingle(),
     supabase.from("categories").select("id, name, parent_id").order("sort_order").order("name"),
-    supabase.from("product_variants").select("id, color_name, color_hex, size, sku, price, stock, is_active").eq("product_id", id),
+    supabase.from("product_variants").select("id, color_name, color_hex, size, sku, price, stock, is_active, konvexa_produk_id").eq("product_id", id),
     supabase.from("product_images").select("id, url, color_name, sort_order").eq("product_id", id).order("sort_order"),
   ]);
   if (!product) notFound();
@@ -48,6 +51,17 @@ export default async function UbahProdukPage({ params, searchParams }: PageProps
   );
   const warna = [...new Set(varian.map((v) => v.color_name))];
   const totalStok = varian.reduce((n, v) => n + v.stock, 0);
+
+  // Tautan KONVEXA: satu baris per warna, atau satu baris untuk produk tanpa varian
+  const kx = konvexaAktif() ? await getKonvexaProduk({ segar: true }) : null;
+  const kxBaris: KxBaris[] = varian.length
+    ? warna.map((w) => ({
+        warna: w,
+        ukuran: varian.filter((v) => v.color_name === w).map((v) => v.size),
+        terpilih: varian.find((v) => v.color_name === w && v.konvexa_produk_id)?.konvexa_produk_id ?? null,
+      }))
+    : [{ warna: null, ukuran: [], terpilih: product.konvexa_produk_id ?? null }];
+  const warnaTertaut = new Set(kxBaris.filter((b) => b.terpilih).map((b) => b.warna));
 
   return (
     <div className="space-y-8">
@@ -105,7 +119,29 @@ export default async function UbahProdukPage({ params, searchParams }: PageProps
             </div>
           </div>
         )}
+        {warnaTertaut.size > 0 && (
+          <p className="rounded-md bg-brand-paper px-3 py-2 text-xs text-muted">
+            Warna yang ditautkan ke KONVEXA ({[...warnaTertaut].join(", ")}) memakai harga dan stok dari Konvexa. Kolom harga khusus dan stok di atas
+            hanya dipakai untuk warna yang tidak ditautkan.
+          </p>
+        )}
         <VariantGenerator productId={id} hasVariants={varian.length > 0} />
+      </section>
+
+      <section className="space-y-4 rounded-xl border border-line bg-white p-5">
+        <h2 className="font-display text-lg font-bold uppercase">4. Hubungkan ke KONVEXA</h2>
+        {!konvexaAktif() ? (
+          <p className="text-sm text-muted">Integrasi KONVEXA belum diaktifkan di server (KONVEXA_URL dan KONVEXA_TOKEN belum diisi).</p>
+        ) : !kx ? (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">KONVEXA sedang tidak bisa dihubungi. Coba muat ulang halaman ini sebentar lagi.</p>
+        ) : (
+          <KonvexaLinkForm
+            productId={id}
+            baris={kxBaris}
+            gudang={kx.gudang?.nama ?? null}
+            pilihan={kx.produk.map(({ id, nama, kode, harga, stokDihitung, stok, varian }) => ({ id, nama, kode, harga, stokDihitung, stok, varian }))}
+          />
+        )}
       </section>
 
       <section className="space-y-4 rounded-xl border border-line bg-white p-5">

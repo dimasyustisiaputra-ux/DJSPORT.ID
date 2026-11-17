@@ -57,6 +57,33 @@ export async function hapusProduk(productId: string) {
   redirect("/admin/produk");
 }
 
+// ---------- Tautan KONVEXA ----------
+
+/** Simpan pasangan produk KONVEXA per warna (field "kx:<warna>") atau untuk produk tanpa varian (field "kx_produk"). */
+export async function simpanTautanKonvexa(productId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { supabase } = await requireAdmin();
+  const nilai = (v: FormDataEntryValue | null) => String(v ?? "").trim() || null;
+  let jumlah = 0;
+  for (const [key, val] of formData.entries()) {
+    if (!key.startsWith("kx:")) continue;
+    const warna = key.slice(3);
+    const { error } = await supabase
+      .from("product_variants")
+      .update({ konvexa_produk_id: nilai(val) })
+      .eq("product_id", productId)
+      .eq("color_name", warna);
+    if (error) return { error: error.message };
+    if (nilai(val)) jumlah++;
+  }
+  if (formData.has("kx_produk")) {
+    const { error } = await supabase.from("products").update({ konvexa_produk_id: nilai(formData.get("kx_produk")) }).eq("id", productId);
+    if (error) return { error: error.message };
+    if (nilai(formData.get("kx_produk"))) jumlah++;
+  }
+  segarkan(productId);
+  return { ok: jumlah ? `Tautan KONVEXA disimpan (${jumlah}).` : "Tautan KONVEXA dikosongkan. Produk ini dipesan lewat WhatsApp." };
+}
+
 // ---------- Varian ----------
 
 /** Buat kombinasi warna × ukuran sekaligus. Kombinasi yang sudah ada dilewati. */

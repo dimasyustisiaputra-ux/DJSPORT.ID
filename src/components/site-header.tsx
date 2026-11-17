@@ -6,6 +6,7 @@ import { getMember } from "@/lib/auth";
 import { getSiteSettings } from "@/lib/settings";
 import { linkWhatsApp } from "@/lib/whatsapp";
 import { MobileMenu } from "@/components/mobile-menu";
+import { CartButton } from "@/components/cart-button";
 
 /** Kategori yang ditampilkan di navbar (diatur di Admin → Kategori). */
 async function navCategories() {
@@ -113,6 +114,7 @@ export function SiteHeader() {
           <CategoryNav />
         </Suspense>
         <div className="flex items-center gap-2">
+          <CartButton />
           <Suspense fallback={<div className="h-9 w-40" />}>
             <UserNav />
           </Suspense>

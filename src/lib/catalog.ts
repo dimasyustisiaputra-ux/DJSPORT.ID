@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
+import { getKonvexaProduk, type KonvexaProduk } from "@/lib/konvexa";
 
 export type Category = { id: string; name: string; slug: string };
 export type CategoryNode = Category & { show_in_nav: boolean; children: (Category & { show_in_nav: boolean })[] };
@@ -38,12 +39,17 @@ export async function getCategoryBySlug(slug: string) {
 // ---------- Produk ----------
 
 export type Variant = {
+  /** ID varian di database, atau "k:<productId>:<ukuran>" untuk ukuran yang diambil langsung dari KONVEXA */
   id: string;
   color_name: string;
   color_hex: string | null;
   size: string;
-  price: number; // harga akhir (harga khusus varian atau harga dasar)
+  price: number; // harga akhir (harga Konvexa bila ditautkan, selain itu harga khusus varian atau harga dasar)
   stock: number;
+  /** ID produk KONVEXA yang ditautkan (null = tidak ditautkan) */
+  konvexaId: string | null;
+  /** bisa dipesan lewat keranjang (ditautkan ke Konvexa dan data Konvexa tersedia) */
+  dipesan: boolean;
 };
 
 export type ProductImage = { url: string; color_name: string | null };
@@ -66,6 +72,8 @@ export type ProductDetail = ProductCard & {
   images: ProductImage[];
   variants: Variant[];
   sizes: string[];
+  /** ada varian yang bisa dipesan lewat keranjang (terhubung ke KONVEXA) */
+  bisaDipesan: boolean;
 };
 
 const URUTAN_UKURAN = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL", "5XL"];
@@ -84,21 +92,78 @@ type RawProduct = {
   description: string | null;
   base_price: number;
   categories: { name: string; slug: string; parent: { name: string; slug: string } | null } | null;
-  product_variants: { id: string; color_name: string; color_hex: string | null; size: string; price: number | null; stock: number; is_active: boolean }[];
+  konvexa_produk_id: string | null;
+  product_variants: {
+    id: string;
+    color_name: string;
+    color_hex: string | null;
+    size: string;
+    price: number | null;
+    stock: number;
+    is_active: boolean;
+    konvexa_produk_id: string | null;
+  }[];
   product_images: { url: string; color_name: string | null; sort_order: number }[];
 };
 
 const SELECT_PRODUK =
-  "id, name, slug, description, base_price, categories(name, slug, parent:parent_id(name, slug)), product_variants(id, color_name, color_hex, size, price, stock, is_active), product_images(url, color_name, sort_order)";
+  "id, name, slug, description, base_price, konvexa_produk_id, categories(name, slug, parent:parent_id(name, slug)), product_variants(id, color_name, color_hex, size, price, stock, is_active, konvexa_produk_id), product_images(url, color_name, sort_order)";
 
-function olah(p: RawProduct): ProductDetail {
-  const variants: Variant[] = p.product_variants
+// Stok "tak terbatas" untuk produk Konvexa yang stoknya tidak dihitung (dibuat sesuai pesanan)
+const STOK_SESUAI_PESANAN = 999;
+type PetaKonvexa = Map<string, KonvexaProduk> | null;
+
+/** Stok satu ukuran menurut KONVEXA */
+function stokKonvexa(kp: KonvexaProduk, size: string) {
+  if (!kp.stokDihitung) return STOK_SESUAI_PESANAN;
+  return Object.keys(kp.varian).length ? kp.varian[size] ?? 0 : kp.stok ?? 0;
+}
+
+function adaTautan(p: RawProduct) {
+  return Boolean(p.konvexa_produk_id) || p.product_variants.some((v) => v.konvexa_produk_id);
+}
+
+async function petaKonvexa(list: RawProduct[], segar = false): Promise<PetaKonvexa> {
+  if (!list.some(adaTautan)) return null;
+  const data = await getKonvexaProduk({ segar });
+  return data ? new Map(data.produk.map((x) => [x.id, x])) : null;
+}
+
+function olah(p: RawProduct, kx: PetaKonvexa = null): ProductDetail {
+  let variants: Variant[] = p.product_variants
     .filter((v) => v.is_active)
-    .map((v) => ({ id: v.id, color_name: v.color_name, color_hex: v.color_hex, size: v.size, price: v.price ?? p.base_price, stock: v.stock }))
-    .sort((a, b) => a.color_name.localeCompare(b.color_name, "id") || urutUkuran(a.size, b.size));
+    .map((v) => {
+      const kp = v.konvexa_produk_id && kx ? kx.get(v.konvexa_produk_id) : undefined;
+      return {
+        id: v.id,
+        color_name: v.color_name,
+        color_hex: v.color_hex,
+        size: v.size,
+        price: kp ? kp.harga : v.price ?? p.base_price,
+        stock: kp ? stokKonvexa(kp, v.size) : v.stock,
+        konvexaId: v.konvexa_produk_id,
+        dipesan: Boolean(kp),
+      };
+    });
+  // Produk tanpa varian tetapi ditautkan ke Konvexa: ukuran & stok diambil langsung dari Konvexa
+  const kpProduk = !variants.length && p.konvexa_produk_id && kx ? kx.get(p.konvexa_produk_id) : undefined;
+  if (kpProduk) {
+    const ukuran = Object.keys(kpProduk.varian);
+    variants = (ukuran.length ? ukuran : [""]).map((size) => ({
+      id: `k:${p.id}:${size}`,
+      color_name: "",
+      color_hex: null,
+      size,
+      price: kpProduk.harga,
+      stock: stokKonvexa(kpProduk, size),
+      konvexaId: kpProduk.id,
+      dipesan: true,
+    }));
+  }
+  variants.sort((a, b) => a.color_name.localeCompare(b.color_name, "id") || urutUkuran(a.size, b.size));
   const images = [...p.product_images].sort((a, b) => a.sort_order - b.sort_order).map(({ url, color_name }) => ({ url, color_name }));
   const colors: ProductCard["colors"] = [];
-  for (const v of variants) if (!colors.some((c) => c.name === v.color_name)) colors.push({ name: v.color_name, hex: v.color_hex });
+  for (const v of variants) if (v.color_name && !colors.some((c) => c.name === v.color_name)) colors.push({ name: v.color_name, hex: v.color_hex });
   const prices = variants.length ? variants.map((v) => v.price) : [p.base_price];
   return {
     id: p.id,
@@ -114,7 +179,8 @@ function olah(p: RawProduct): ProductDetail {
     inStock: variants.length === 0 || variants.some((v) => v.stock > 0),
     images,
     variants,
-    sizes: [...new Set(variants.map((v) => v.size))].sort(urutUkuran),
+    sizes: [...new Set(variants.map((v) => v.size).filter(Boolean))].sort(urutUkuran),
+    bisaDipesan: variants.some((v) => v.dipesan),
   };
 }
 
@@ -126,7 +192,9 @@ async function _getProducts(): Promise<ProductCard[]> {
     .eq("is_active", true)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data as unknown as RawProduct[]).map(olah).map(
+  const list = data as unknown as RawProduct[];
+  const kx = await petaKonvexa(list);
+  return list.map((p) => olah(p, kx)).map(
     ({ id, name, slug, category, minPrice, maxPrice, colors, image, inStock }) =>
       ({ id, name, slug, category, minPrice, maxPrice, colors, image, inStock }),
   );
@@ -140,7 +208,19 @@ async function _getProductBySlug(slug: string): Promise<ProductDetail | null> {
     .eq("is_active", true)
     .maybeSingle();
   if (error) throw error;
-  return data ? olah(data as unknown as RawProduct) : null;
+  if (!data) return null;
+  const p = data as unknown as RawProduct;
+  return olah(p, await petaKonvexa([p]));
+}
+
+/** Produk untuk diproses saat pesanan dikirim: stok Konvexa selalu diambil ulang (tidak dari cache). */
+export async function getProductsForOrder(ids: string[]): Promise<ProductDetail[]> {
+  if (!ids.length) return [];
+  const { data, error } = await createPublicClient().from("products").select(SELECT_PRODUK).in("id", ids).eq("is_active", true);
+  if (error) throw error;
+  const list = data as unknown as RawProduct[];
+  const kx = await petaKonvexa(list, true);
+  return list.map((p) => olah(p, kx));
 }
 
 export type Banner = {
