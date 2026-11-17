@@ -15,5 +15,9 @@
 	},
 	"observability": {
 		"enabled": true
+	},
+	// Nilai publik. Rahasia (KONVEXA_TOKEN, TURNSTILE_SECRET_KEY) diisi di dashboard Worker → Settings → Variables and Secrets.
+	"vars": {
+		"KONVEXA_URL": "https://konvexa.id"
 	}
 }
