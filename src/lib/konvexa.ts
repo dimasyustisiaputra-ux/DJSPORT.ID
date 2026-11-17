@@ -2,17 +2,21 @@
 // HANYA untuk kode server: memakai kunci rahasia KONVEXA_TOKEN (jangan diberi awalan NEXT_PUBLIC_).
 // Lihat juga worker/djsport.js di repo KONVEXA.
 
+import type { KxVarian } from "@/lib/konvexa-cocok";
+
 export type KonvexaProduk = {
   id: string;
   nama: string;
   kode: string;
   harga: number;
   satuan: string;
+  /** nama dimensi variasi di Konvexa, mis. { n1: "Warna", n2: "Ukuran" }; null = produk tanpa definisi variasi */
+  dimensi: { n1: string; n2: string } | null;
   /** false = stok tidak dihitung di Konvexa (dibuat sesuai pesanan) */
   stokDihitung: boolean;
   stok: number | null;
-  /** stok per ukuran, mis. { M: 4, L: 2 }; kosong bila produk tidak punya stok per ukuran */
-  varian: Record<string, number>;
+  /** stok per variasi di gudang utama; kosong bila produk tidak punya stok per variasi */
+  varian: KxVarian[];
   tanpaVarian: number | null;
 };
 

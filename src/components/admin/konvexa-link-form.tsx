@@ -4,22 +4,24 @@ import { useActionState, useState } from "react";
 import { simpanTautanKonvexa } from "@/app/admin/produk/actions";
 import { inputClass, Notice } from "@/components/admin/product-form";
 import { rupiah } from "@/lib/format";
+import { cariVarian, type KxProdukVarian } from "@/lib/konvexa-cocok";
 
-export type KxPilihan = { id: string; nama: string; kode: string; harga: number; stokDihitung: boolean; stok: number | null; varian: Record<string, number> };
+export type KxPilihan = KxProdukVarian & { id: string; nama: string; kode: string };
 export type KxBaris = { warna: string | null; ukuran: string[]; terpilih: string | null };
 
 function stokTeks(p: KxPilihan) {
   if (!p.stokDihitung) return "stok tidak dihitung (sesuai pesanan)";
-  const v = Object.entries(p.varian);
-  return v.length ? v.map(([s, q]) => `${s} ${q}`).join(" · ") : `stok ${p.stok ?? 0}`;
+  return p.varian.length ? p.varian.map((v) => `${v.label} ${v.qty}`).join(" · ") : `stok ${p.stok ?? 0}`;
 }
 
 function Baris({ baris, pilihan }: { baris: KxBaris; pilihan: KxPilihan[] }) {
   const [id, setId] = useState(baris.terpilih ?? "");
   const kp = pilihan.find((p) => p.id === id);
-  const ukuranKx = kp ? Object.keys(kp.varian) : [];
-  // Ukuran di DJSport yang tidak dikenal Konvexa akan terbaca stok 0
-  const tidakAda = kp && kp.stokDihitung && ukuranKx.length ? baris.ukuran.filter((u) => !ukuranKx.includes(u)) : [];
+  // Warna + ukuran DJSport yang tidak punya pasangan variasi di Konvexa tidak bisa dipesan lewat keranjang
+  const tidakAda =
+    kp && kp.varian.length && baris.warna !== null
+      ? (baris.ukuran.length ? baris.ukuran : [""]).filter((u) => !cariVarian(kp, baris.warna ?? "", u)).map((u) => u || baris.warna!)
+      : [];
   const hilang = Boolean(baris.terpilih) && !pilihan.some((p) => p.id === baris.terpilih);
 
   return (
@@ -43,8 +45,12 @@ function Baris({ baris, pilihan }: { baris: KxBaris; pilihan: KxPilihan[] }) {
         )}
         {tidakAda.length > 0 && (
           <p className="text-xs text-red-600">
-            Ukuran {tidakAda.join(", ")} tidak ada di Konvexa, jadi akan tampil habis. Samakan penulisan ukurannya.
+            {baris.warna} {tidakAda.join(", ")} tidak ditemukan di variasi Konvexa, jadi tampil habis dan tidak bisa dipesan. Samakan penulisan
+            warna/ukurannya dengan variasi di Konvexa.
           </p>
+        )}
+        {kp && baris.warna === null && kp.varian.length > 0 && (
+          <p className="text-xs text-muted">Pilihan warna/ukuran di website diambil langsung dari variasi produk Konvexa ini.</p>
         )}
         {hilang && <p className="text-xs text-red-600">Produk Konvexa yang ditautkan sudah tidak ada. Pilih ulang.</p>}
       </div>

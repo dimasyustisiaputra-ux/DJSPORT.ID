@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getKonvexaProduk, type KonvexaProduk } from "@/lib/konvexa";
+import { STOK_SESUAI_PESANAN, stokVarianKonvexa, varianDariKonvexa } from "@/lib/konvexa-cocok";
 
 export type Category = { id: string; name: string; slug: string };
 export type CategoryNode = Category & { show_in_nav: boolean; children: (Category & { show_in_nav: boolean })[] };
@@ -48,8 +49,10 @@ export type Variant = {
   stock: number;
   /** ID produk KONVEXA yang ditautkan (null = tidak ditautkan) */
   konvexaId: string | null;
-  /** bisa dipesan lewat keranjang (ditautkan ke Konvexa dan data Konvexa tersedia) */
+  /** bisa dipesan lewat keranjang (ditautkan ke Konvexa, data Konvexa tersedia, dan variasinya dikenal Konvexa) */
   dipesan: boolean;
+  /** label variasi di KONVEXA yang dikirim saat memesan ("" = tanpa variasi) */
+  kxLabel: string | null;
 };
 
 export type ProductImage = { url: string; color_name: string | null };
@@ -109,15 +112,7 @@ type RawProduct = {
 const SELECT_PRODUK =
   "id, name, slug, description, base_price, konvexa_produk_id, categories(name, slug, parent:parent_id(name, slug)), product_variants(id, color_name, color_hex, size, price, stock, is_active, konvexa_produk_id), product_images(url, color_name, sort_order)";
 
-// Stok "tak terbatas" untuk produk Konvexa yang stoknya tidak dihitung (dibuat sesuai pesanan)
-const STOK_SESUAI_PESANAN = 999;
 type PetaKonvexa = Map<string, KonvexaProduk> | null;
-
-/** Stok satu ukuran menurut KONVEXA */
-function stokKonvexa(kp: KonvexaProduk, size: string) {
-  if (!kp.stokDihitung) return STOK_SESUAI_PESANAN;
-  return Object.keys(kp.varian).length ? kp.varian[size] ?? 0 : kp.stok ?? 0;
-}
 
 function adaTautan(p: RawProduct) {
   return Boolean(p.konvexa_produk_id) || p.product_variants.some((v) => v.konvexa_produk_id);
@@ -134,31 +129,48 @@ function olah(p: RawProduct, kx: PetaKonvexa = null): ProductDetail {
     .filter((v) => v.is_active)
     .map((v) => {
       const kp = v.konvexa_produk_id && kx ? kx.get(v.konvexa_produk_id) : undefined;
+      const k = kp ? stokVarianKonvexa(kp, v.color_name, v.size) : null;
       return {
         id: v.id,
         color_name: v.color_name,
         color_hex: v.color_hex,
         size: v.size,
-        price: kp ? kp.harga : v.price ?? p.base_price,
-        stock: kp ? stokKonvexa(kp, v.size) : v.stock,
+        price: k ? k.harga : v.price ?? p.base_price,
+        stock: k ? k.qty : v.stock,
         konvexaId: v.konvexa_produk_id,
-        dipesan: Boolean(kp),
+        dipesan: Boolean(k && k.label !== null),
+        kxLabel: k ? k.label : null,
       };
     });
-  // Produk tanpa varian tetapi ditautkan ke Konvexa: ukuran & stok diambil langsung dari Konvexa
+  // Produk tanpa varian tetapi ditautkan ke Konvexa: warna/ukuran & stok diambil langsung dari variasi Konvexa
   const kpProduk = !variants.length && p.konvexa_produk_id && kx ? kx.get(p.konvexa_produk_id) : undefined;
   if (kpProduk) {
-    const ukuran = Object.keys(kpProduk.varian);
-    variants = (ukuran.length ? ukuran : [""]).map((size) => ({
-      id: `k:${p.id}:${size}`,
-      color_name: "",
-      color_hex: null,
-      size,
-      price: kpProduk.harga,
-      stock: stokKonvexa(kpProduk, size),
-      konvexaId: kpProduk.id,
-      dipesan: true,
-    }));
+    const dariKx = varianDariKonvexa(kpProduk);
+    variants = dariKx.length
+      ? dariKx.map(({ warna, ukuran, v }) => ({
+          id: `k:${p.id}:${v.label}`,
+          color_name: warna,
+          color_hex: null,
+          size: ukuran,
+          price: v.harga || kpProduk.harga,
+          stock: kpProduk.stokDihitung ? v.qty : STOK_SESUAI_PESANAN,
+          konvexaId: kpProduk.id,
+          dipesan: true,
+          kxLabel: v.label,
+        }))
+      : [
+          {
+            id: `k:${p.id}:`,
+            color_name: "",
+            color_hex: null,
+            size: "",
+            price: kpProduk.harga,
+            stock: kpProduk.stokDihitung ? kpProduk.stok ?? 0 : STOK_SESUAI_PESANAN,
+            konvexaId: kpProduk.id,
+            dipesan: true,
+            kxLabel: "",
+          },
+        ];
   }
   variants.sort((a, b) => a.color_name.localeCompare(b.color_name, "id") || urutUkuran(a.size, b.size));
   const images = [...p.product_images].sort((a, b) => a.sort_order - b.sort_order).map(({ url, color_name }) => ({ url, color_name }));

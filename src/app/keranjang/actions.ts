@@ -68,9 +68,9 @@ export async function kirimPesanan(m: Masukan): Promise<HasilKirim> {
     const p = produk.find((x) => x.id === it.productId);
     const v = p?.variants.find((x) => x.id === it.key);
     const qty = Math.floor(Number(it.qty));
-    if (!p || !v || !v.dipesan || !v.konvexaId) return { ok: false, pesan: "Ada produk di keranjang yang sudah tidak bisa dipesan online. Hapus produk itu lalu coba lagi.", kurang: [{ key: it.key, tersedia: 0 }] };
+    if (!p || !v || !v.dipesan || !v.konvexaId || v.kxLabel === null) return { ok: false, pesan: "Ada produk di keranjang yang sudah tidak bisa dipesan online. Hapus produk itu lalu coba lagi.", kurang: [{ key: it.key, tersedia: 0 }] };
     if (!(qty > 0) || qty > 99) return { ok: false, pesan: "Jumlah barang tidak valid." };
-    baris.push({ key: it.key, produkId: v.konvexaId, varian: v.size, qty });
+    baris.push({ key: it.key, produkId: v.konvexaId, varian: v.kxLabel, qty });
   }
 
   const hasil = await kirimPesananKeKonvexa({

@@ -139,7 +139,7 @@ export default async function UbahProdukPage({ params, searchParams }: PageProps
             productId={id}
             baris={kxBaris}
             gudang={kx.gudang?.nama ?? null}
-            pilihan={kx.produk.map(({ id, nama, kode, harga, stokDihitung, stok, varian }) => ({ id, nama, kode, harga, stokDihitung, stok, varian }))}
+            pilihan={kx.produk.map(({ id, nama, kode, harga, stokDihitung, stok, varian, dimensi }) => ({ id, nama, kode, harga, stokDihitung, stok, varian, dimensi }))}
           />
         )}
       </section>
