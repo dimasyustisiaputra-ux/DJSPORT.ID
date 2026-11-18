@@ -3,8 +3,6 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getCategories } from "@/lib/catalog";
 import { getMember } from "@/lib/auth";
-import { getSiteSettings } from "@/lib/settings";
-import { linkWhatsApp } from "@/lib/whatsapp";
 import { MobileMenu } from "@/components/mobile-menu";
 import { CartButton } from "@/components/cart-button";
 
@@ -59,29 +57,10 @@ async function MobileCategoryMenu() {
   return <MobileMenu categories={await navCategories()} />;
 }
 
-/** Tombol "Hubungi Sales" di header untuk pengunjung (muncul bila nomor WhatsApp sudah diisi di admin). */
-async function WhatsAppHeaderButton() {
-  const { whatsappNumber } = await getSiteSettings();
-  if (!whatsappNumber) return null;
-  return (
-    <a
-      href={linkWhatsApp(whatsappNumber, "Halo DJSport, saya ingin bertanya tentang produk dan harga.")}
-      target="_blank"
-      rel="noopener"
-      className="flex items-center gap-2 whitespace-nowrap rounded-md bg-[#25D366] px-3 py-2 text-sm font-semibold text-white hover:bg-[#1ebe5a]"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-        <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
-      </svg>
-      Hubungi Sales
-    </a>
-  );
-}
-
 async function UserNav() {
   const member = await getMember();
   // Pengunjung umum tidak melihat tombol login; tim admin masuk lewat /masuk.
-  if (!member) return <WhatsAppHeaderButton />;
+  if (!member) return null;
   const nama = member.fullName?.split(" ")[0] || "Akun";
   return (
     <>
@@ -115,7 +94,7 @@ export function SiteHeader() {
         </Suspense>
         <div className="flex items-center gap-2">
           <CartButton />
-          <Suspense fallback={<div className="h-9 w-40" />}>
+          <Suspense>
             <UserNav />
           </Suspense>
         </div>
