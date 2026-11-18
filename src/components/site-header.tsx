@@ -105,7 +105,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer className="bg-brand-ink text-white/70">
+    <footer className="bg-black text-white/70">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-sm">
         <span className="font-display font-bold uppercase tracking-wider text-white">DJSport</span>
         <span>© 2026 djsport.id</span>

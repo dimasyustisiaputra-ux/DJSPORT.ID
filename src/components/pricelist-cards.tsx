@@ -104,7 +104,13 @@ export function PricelistCards({
               {/* harga: di HP di bawah nama, di layar lebar di kolom kanan */}
               <div className="col-start-2 row-start-2 self-start sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:text-right">
                 {p.hargaCoret !== null && p.hargaCoret > p.minPrice && (
-                  <p className="text-xs text-muted line-through sm:text-sm">{rupiah(p.hargaCoret)}</p>
+                  <p className="flex items-center gap-1.5 sm:justify-end">
+                    {/* persen diskon dibulatkan ke bawah, tanpa angka di belakang koma */}
+                    <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-brand-red sm:text-[11px]">
+                      Disc {Math.floor(((p.hargaCoret - p.minPrice) / p.hargaCoret) * 100)}%
+                    </span>
+                    <span className="text-xs text-muted line-through sm:text-sm">{rupiah(p.hargaCoret)}</span>
+                  </p>
                 )}
                 {p.minPrice !== p.maxPrice && <p className="text-[10px] text-muted">mulai</p>}
                 <p className="whitespace-nowrap text-xl font-bold leading-tight sm:text-2xl">{rupiah(p.minPrice)}</p>
