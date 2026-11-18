@@ -44,11 +44,17 @@ export function PricelistCards({
   title,
   banner,
   settings,
+  subKategori = [],
+  aktif,
 }: {
   products: ProductCard[];
   title: string;
   banner: BannerGambar;
   settings: SiteSettings;
+  /** Tombol sub-kategori di bawah banner */
+  subKategori?: { id: string; name: string; slug: string }[];
+  /** slug kategori yang sedang dibuka (tombolnya ditandai) */
+  aktif?: string;
 }) {
   /** Buka WhatsApp sales dengan pesan berisi produk kartu ini. */
   function hubungiSales(p: ProductCard) {
@@ -64,20 +70,45 @@ export function PricelistCards({
     window.open(linkWhatsApp(settings.whatsappNumber, pesan), "_blank", "noopener");
   }
 
-  if (products.length === 0) {
-    return (
-      <div className="rounded-xl border border-dashed border-line p-12 text-center">
-        <p className="font-display text-xl font-bold uppercase">Pricelist segera hadir</p>
-        <p className="mt-1 text-sm text-muted">Daftar harga {title} sedang disiapkan. Hubungi tim sales kami lewat WhatsApp.</p>
-      </div>
-    );
-  }
-
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-3xl">
         <h1 className="sr-only">{title}</h1>
         <BannerKategori title={title} banner={banner} />
+
+        {subKategori.length > 0 && (
+          // HP: satu baris, lebar tombol dibagi sesuai panjang tulisan (teks panjang turun 2 baris); bila tombol terlalu banyak bisa digeser.
+          // Layar lebar: tombol biasa berjajar.
+          <nav
+            aria-label="Sub-kategori"
+            className="mt-3 flex gap-1.5 overflow-x-auto sm:mt-4 sm:flex-wrap sm:gap-2 sm:overflow-visible"
+          >
+            {subKategori.map((s) => {
+              const ini = s.slug === aktif;
+              return (
+                <Link
+                  key={s.id}
+                  href={`/kategori/${s.slug}`}
+                  aria-current={ini ? "page" : undefined}
+                  className={`flex flex-auto items-center justify-center rounded-lg border px-2 py-1.5 text-center text-[11px] font-medium leading-tight sm:flex-none sm:rounded-full sm:px-4 sm:text-sm ${
+                    s.name.length <= 10 ? "whitespace-nowrap" : "min-w-16"
+                  } ${
+                    ini ? "border-brand-ink bg-brand-ink text-white" : "border-line hover:border-brand-ink"
+                  }`}
+                >
+                  {s.name}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+
+        {products.length === 0 && (
+          <div className="mt-4 rounded-xl border border-dashed border-line p-10 text-center">
+            <p className="font-display text-xl font-bold uppercase">Pricelist segera hadir</p>
+            <p className="mt-1 text-sm text-muted">Daftar harga {title} sedang disiapkan. Hubungi tim sales kami lewat WhatsApp.</p>
+          </div>
+        )}
 
         <ul aria-label={`Daftar harga ${title}`} className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
           {products.map((p, i) => (

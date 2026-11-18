@@ -41,7 +41,7 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
         <span className="text-foreground">{category.name}</span>
       </nav>
 
-      {subs.length > 0 && (
+      {!pricelist && subs.length > 0 && (
         <div className="mt-5 flex flex-wrap gap-2">
           {subs.map((s) => (
             <Link key={s.id} href={`/kategori/${s.slug}`} className="rounded-full border border-line px-4 py-1.5 text-sm font-medium hover:border-brand-ink">
@@ -51,7 +51,7 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
         </div>
       )}
 
-      <div className="mt-8">
+      <div className={pricelist ? "mt-5" : "mt-8"}>
         {settings ? (
           <PricelistCards
             key={category.slug}
@@ -60,6 +60,9 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
             // sub-kategori tanpa banner sendiri memakai banner induknya
             banner={category.banner.desktop || category.banner.mobile || !parent ? category.banner : parent.banner}
             settings={settings}
+            // tombol sub-kategori di bawah banner; di halaman sub-kategori tampil saudaranya dengan yang aktif ditandai
+            subKategori={(parent ? parent.children : subs).filter((s) => s.show_in_nav).map(({ id, name, slug }) => ({ id, name, slug }))}
+            aktif={category.slug}
           />
         ) : (
         <ProductGrid
