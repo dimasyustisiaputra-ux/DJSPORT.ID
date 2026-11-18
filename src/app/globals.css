@@ -42,12 +42,3 @@ body {
     rgba(255, 255, 255, 0.14) 14px 20px
   );
 }
-
-/* Latar gelap halaman pricelist (mis. Custom Jersey): tinta brand dengan sorotan oranye lembut */
-.pricelist-panel {
-  background-color: #1b1b20;
-  background-image:
-    radial-gradient(60% 45% at 85% 0%, rgba(240, 91, 54, 0.28), transparent 70%),
-    radial-gradient(50% 40% at 0% 100%, rgba(245, 63, 36, 0.16), transparent 70%),
-    linear-gradient(180deg, #232328, #17171b);
-}

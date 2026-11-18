@@ -20,19 +20,19 @@ function BannerKategori({ title, banner }: { title: string; banner: BannerGambar
     return (
       <div aria-hidden className="brand-gradient relative grid aspect-[2/1] place-items-center overflow-hidden rounded-2xl sm:aspect-[3/1]">
         <div className="brand-stripes absolute inset-0" />
-        <p className="relative px-4 text-center font-display text-3xl font-bold uppercase tracking-tight sm:text-5xl">{title}</p>
+        <p className="relative px-4 text-center font-display text-3xl font-bold uppercase text-white tracking-tight sm:text-5xl">{title}</p>
       </div>
     );
   }
   return (
     <>
       {hp && (
-        <div className={`relative overflow-hidden rounded-2xl bg-white/5 sm:hidden ${banner.mobile ? "aspect-square" : "aspect-[3/1]"}`}>
+        <div className={`relative overflow-hidden rounded-2xl bg-brand-paper sm:hidden ${banner.mobile ? "aspect-square" : "aspect-[3/1]"}`}>
           <Image src={hp} alt={title} fill sizes="100vw" className="object-cover" priority />
         </div>
       )}
       {banner.desktop && (
-        <div className="relative hidden aspect-[3/1] overflow-hidden rounded-2xl bg-white/5 sm:block">
+        <div className="relative hidden aspect-[3/1] overflow-hidden rounded-2xl bg-brand-paper sm:block">
           <Image src={banner.desktop} alt={title} fill sizes="(min-width: 768px) 768px, 100vw" className="object-cover" priority />
         </div>
       )}
@@ -77,8 +77,8 @@ export function PricelistCards({
   }
 
   return (
-    <section className="pricelist-panel relative overflow-hidden rounded-3xl px-4 py-8 text-white sm:px-8 md:py-12">
-      <div className="relative mx-auto max-w-3xl">
+    <section className="bg-white">
+      <div className="mx-auto max-w-3xl">
         <h1 className="sr-only">{title}</h1>
         <BannerKategori title={title} banner={banner} />
 
@@ -105,16 +105,16 @@ export function PricelistCards({
                   }
                 }}
                 className={`relative grid cursor-pointer grid-cols-[76px_1fr] items-start gap-x-3 gap-y-3 rounded-2xl border p-3 outline-none transition sm:grid-cols-[112px_1fr_auto] sm:gap-x-5 sm:gap-y-1 sm:p-4 focus-visible:ring-2 focus-visible:ring-brand-orange ${
-                  aktif ? "border-brand-orange/80 bg-white/[0.12] shadow-lg shadow-black/30" : "border-white/15 bg-white/[0.04] hover:border-white/30"
+                  aktif ? "border-brand-orange bg-orange-50/60 shadow-lg shadow-brand-orange/10" : "border-line bg-white hover:border-gray-300"
                 }`}
               >
                 {aktif && (
-                  <span aria-hidden className="brand-gradient absolute -left-2.5 -top-2.5 grid h-7 w-7 place-items-center rounded-full text-white shadow-md ring-4 ring-[#1b1b20]">
+                  <span aria-hidden className="brand-gradient absolute -left-2.5 -top-2.5 grid h-7 w-7 place-items-center rounded-full text-white shadow-md ring-4 ring-white">
                     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.6" className="h-3.5 w-3.5"><path d="M4.5 10.5l3.5 3.5 7.5-8" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </span>
                 )}
 
-                <div className="relative row-span-2 aspect-square overflow-hidden rounded-xl bg-white/10 sm:row-span-2">
+                <div className="relative row-span-2 aspect-square overflow-hidden rounded-xl bg-brand-paper sm:row-span-2">
                   {p.image ? (
                     <Image src={p.image} alt={p.name} fill sizes="(min-width: 640px) 112px, 76px" className="object-cover" priority={i < 3} />
                   ) : (
@@ -133,17 +133,17 @@ export function PricelistCards({
                 {/* harga: di HP di bawah nama, di layar lebar di kolom kanan */}
                 <div className="col-start-2 row-start-2 self-start sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:text-right">
                   {p.hargaCoret !== null && p.hargaCoret > p.minPrice && (
-                    <p className="text-xs text-white/50 line-through sm:text-sm">{rupiah(p.hargaCoret)}</p>
+                    <p className="text-xs text-muted line-through sm:text-sm">{rupiah(p.hargaCoret)}</p>
                   )}
-                  {p.minPrice !== p.maxPrice && <p className="text-[10px] text-white/60">mulai</p>}
+                  {p.minPrice !== p.maxPrice && <p className="text-[10px] text-muted">mulai</p>}
                   <p className="whitespace-nowrap text-xl font-bold leading-tight sm:text-2xl">{rupiah(p.minPrice)}</p>
-                  {p.satuan && <p className="text-[11px] font-medium text-white/70 sm:text-xs">{p.satuan}</p>}
+                  {p.satuan && <p className="text-[11px] font-medium text-muted sm:text-xs">{p.satuan}</p>}
                 </div>
 
                 {/* poin & tautan detail: di HP selebar kartu */}
                 <div className="col-span-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-2">
                   {p.poin.length > 0 && (
-                    <ul className="mt-2 space-y-0.5 text-xs text-white/70 sm:text-sm">
+                    <ul className="mt-2 space-y-0.5 text-xs text-muted sm:text-sm">
                       {p.poin.map((b) => (
                         <li key={b}>+ {b}</li>
                       ))}
@@ -152,7 +152,7 @@ export function PricelistCards({
                   <Link
                     href={`/produk/${p.slug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="mt-2 inline-block text-xs font-semibold text-white/80 underline-offset-4 hover:text-white hover:underline"
+                    className="mt-2 inline-block text-xs font-semibold text-brand-ink underline-offset-4 hover:text-brand-orange hover:underline"
                   >
                     Lihat detail & foto →
                   </Link>
@@ -167,15 +167,15 @@ export function PricelistCards({
             <button
               onClick={bukaWhatsApp}
               disabled={!terpilih}
-              className="brand-gradient flex w-full items-center justify-center gap-2 rounded-xl px-5 py-4 text-sm font-bold text-white shadow-lg shadow-black/30 transition hover:brightness-110 disabled:opacity-60 sm:text-base"
+              className="brand-gradient flex w-full items-center justify-center gap-2 rounded-xl px-5 py-4 text-sm font-bold text-white shadow-lg shadow-brand-orange/25 transition hover:brightness-110 disabled:opacity-60 sm:text-base"
             >
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className="h-5 w-5"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.4-.3Z" /></svg>
               {terpilih ? `Pesan ${terpilih.name} via WhatsApp` : "Pilih salah satu dulu"}
             </button>
           ) : (
-            <p className="rounded-xl bg-white/10 px-4 py-3 text-center text-sm text-white/80">Hubungi tim sales DJSport untuk memesan.</p>
+            <p className="rounded-xl bg-brand-paper px-4 py-3 text-center text-sm text-muted">Hubungi tim sales DJSport untuk memesan.</p>
           )}
-          <p className="mt-3 text-center text-xs text-white/50">Harga dapat berubah sesuai desain, bahan, dan jumlah pesanan.</p>
+          <p className="mt-3 text-center text-xs text-muted">Harga dapat berubah sesuai desain, bahan, dan jumlah pesanan.</p>
         </div>
       </div>
     </section>
