@@ -79,7 +79,7 @@ export function PricelistCards({
         <h1 className="sr-only">{title}</h1>
         <BannerKategori title={title} banner={banner} />
 
-        <ul aria-label={`Daftar harga ${title}`} className="mt-8 space-y-4">
+        <ul aria-label={`Daftar harga ${title}`} className="mt-3 space-y-2 sm:mt-4 sm:space-y-3">
           {products.map((p, i) => (
             <li
               key={p.id}
