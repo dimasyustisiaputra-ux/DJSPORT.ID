@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { geserKategori, hapusKategori, simpanKategori, tambahKategori, type KategoriState } from "@/app/admin/kategori/actions";
 import { inputClass, Notice } from "@/components/admin/product-form";
 
-type AdminCategoryBase = { id: string; name: string; slug: string; show_in_nav: boolean; produk: number };
+type AdminCategoryBase = { id: string; name: string; slug: string; show_in_nav: boolean; tampilan: "grid" | "pricelist"; produk: number };
 export type AdminCategory = AdminCategoryBase & { children: AdminCategoryBase[] };
 
 function TambahForm({ parentId, placeholder, label }: { parentId: string | null; placeholder: string; label: string }) {
@@ -100,6 +100,13 @@ function Baris({
               <input type="checkbox" name="show_in_nav" defaultChecked={cat.show_in_nav} className="h-4 w-4 accent-[var(--brand-orange)]" />
               {isSub ? "Tampilkan di dropdown" : "Tampilkan di navbar"}
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-xs font-medium">Tampilan halaman:</span>
+              <select name="tampilan" defaultValue={cat.tampilan} className={`${inputClass} w-auto`}>
+                <option value="grid">Grid produk (biasa)</option>
+                <option value="pricelist">Pricelist (kartu harga + pesan via WhatsApp)</option>
+              </select>
+            </label>
           </div>
           <div className="flex gap-2">
             <button disabled={pending} className="brand-gradient rounded-md px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
@@ -114,6 +121,9 @@ function Baris({
             <p className={`truncate ${isSub ? "font-medium" : "font-semibold"}`}>
               {isSub && <span className="mr-1 text-muted">↳</span>}
               {cat.name}
+              {cat.tampilan === "pricelist" && (
+                <span className="ml-2 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-normal text-brand-orange">pricelist</span>
+              )}
               {!cat.show_in_nav && (
                 <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">disembunyikan</span>
               )}

@@ -9,7 +9,7 @@ export default async function AdminKategoriPage() {
   const { supabase } = await requireAdmin();
   const { data } = await supabase
     .from("categories")
-    .select("id, name, slug, parent_id, show_in_nav, products(count)")
+    .select("id, name, slug, parent_id, show_in_nav, tampilan, products(count)")
     .order("sort_order")
     .order("name");
 
@@ -19,9 +19,10 @@ export default async function AdminKategoriPage() {
     slug: c.slug as string,
     parent_id: c.parent_id as string | null,
     show_in_nav: c.show_in_nav as boolean,
+    tampilan: c.tampilan as "grid" | "pricelist",
     produk: ((c.products as unknown as { count: number }[])?.[0]?.count ?? 0) as number,
   }));
-  const tanpaInduk = (c: (typeof rows)[number]) => ({ id: c.id, name: c.name, slug: c.slug, show_in_nav: c.show_in_nav, produk: c.produk });
+  const tanpaInduk = (c: (typeof rows)[number]) => ({ id: c.id, name: c.name, slug: c.slug, show_in_nav: c.show_in_nav, tampilan: c.tampilan, produk: c.produk });
   const tree: AdminCategory[] = rows
     .filter((c) => !c.parent_id)
     .map((c) => ({ ...tanpaInduk(c), children: rows.filter((s) => s.parent_id === c.id).map(tanpaInduk) }));

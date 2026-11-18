@@ -41,11 +41,12 @@ export async function simpanKategori(id: string, _prev: KategoriState, formData:
   const name = String(formData.get("name") ?? "").trim();
   const slug = slugify(String(formData.get("slug") ?? "") || name);
   const show_in_nav = formData.get("show_in_nav") === "on";
+  const tampilan = formData.get("tampilan") === "pricelist" ? "pricelist" : "grid";
   const parentRaw = formData.get("parent_id");
   if (!name) return { error: "Nama kategori wajib diisi." };
   if (!slug) return { error: "Alamat URL tidak valid." };
 
-  const data: Record<string, unknown> = { name, slug, show_in_nav };
+  const data: Record<string, unknown> = { name, slug, show_in_nav, tampilan };
   if (parentRaw !== null) {
     const parent_id = String(parentRaw) || null;
     if (parent_id === id) return { error: "Kategori tidak bisa menjadi induk dirinya sendiri." };

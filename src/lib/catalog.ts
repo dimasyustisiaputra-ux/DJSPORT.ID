@@ -4,13 +4,19 @@ import { getKonvexaProduk, type KonvexaProduk } from "@/lib/konvexa";
 import { STOK_SESUAI_PESANAN, stokVarianKonvexa, varianDariKonvexa } from "@/lib/konvexa-cocok";
 
 export type Category = { id: string; name: string; slug: string };
-export type CategoryNode = Category & { show_in_nav: boolean; children: (Category & { show_in_nav: boolean })[] };
+/** "grid" = kartu produk biasa, "pricelist" = daftar harga berbentuk kartu (mis. Custom Jersey) */
+export type TampilanKategori = "grid" | "pricelist";
+export type CategoryNode = Category & {
+  show_in_nav: boolean;
+  tampilan: TampilanKategori;
+  children: (Category & { show_in_nav: boolean; tampilan: TampilanKategori })[];
+};
 
 /** Kategori utama beserta sub-kategorinya (untuk navbar dropdown), sesuai urutan di admin. */
 async function _getCategories(): Promise<CategoryNode[]> {
   const { data, error } = await createPublicClient()
     .from("categories")
-    .select("id, name, slug, parent_id, show_in_nav")
+    .select("id, name, slug, parent_id, show_in_nav, tampilan")
     .order("sort_order")
     .order("name");
   if (error) throw error;
@@ -20,9 +26,10 @@ async function _getCategories(): Promise<CategoryNode[]> {
     name: c.name,
     slug: c.slug,
     show_in_nav: c.show_in_nav,
+    tampilan: c.tampilan as TampilanKategori,
     children: data
       .filter((s) => s.parent_id === c.id)
-      .map((s) => ({ id: s.id, name: s.name, slug: s.slug, show_in_nav: s.show_in_nav })),
+      .map((s) => ({ id: s.id, name: s.name, slug: s.slug, show_in_nav: s.show_in_nav, tampilan: s.tampilan as TampilanKategori })),
   }));
 }
 
@@ -68,6 +75,11 @@ export type ProductCard = {
   colors: { name: string; hex: string | null }[];
   image: string | null;
   inStock: boolean;
+  /** Untuk tampilan pricelist: harga coret, label (mis. "BEST VALUE"), satuan harga, dan poin dari deskripsi */
+  hargaCoret: number | null;
+  label: string | null;
+  satuan: string | null;
+  poin: string[];
 };
 
 export type ProductDetail = ProductCard & {
@@ -94,6 +106,9 @@ type RawProduct = {
   slug: string;
   description: string | null;
   base_price: number;
+  harga_coret: number | null;
+  label: string | null;
+  satuan: string | null;
   categories: { name: string; slug: string; parent: { name: string; slug: string } | null } | null;
   konvexa_produk_id: string | null;
   product_variants: {
@@ -110,7 +125,7 @@ type RawProduct = {
 };
 
 const SELECT_PRODUK =
-  "id, name, slug, description, base_price, konvexa_produk_id, categories(name, slug, parent:parent_id(name, slug)), product_variants(id, color_name, color_hex, size, price, stock, is_active, konvexa_produk_id), product_images(url, color_name, sort_order)";
+  "id, name, slug, description, base_price, harga_coret, label, satuan, konvexa_produk_id, categories(name, slug, parent:parent_id(name, slug)), product_variants(id, color_name, color_hex, size, price, stock, is_active, konvexa_produk_id), product_images(url, color_name, sort_order)";
 
 type PetaKonvexa = Map<string, KonvexaProduk> | null;
 
@@ -122,6 +137,15 @@ async function petaKonvexa(list: RawProduct[], segar = false): Promise<PetaKonve
   if (!list.some(adaTautan)) return null;
   const data = await getKonvexaProduk({ segar });
   return data ? new Map(data.produk.map((x) => [x.id, x])) : null;
+}
+
+/** Baris-baris deskripsi menjadi poin singkat (tanda "-", "•", "+" di awal baris dibuang). */
+function poinDeskripsi(d: string | null) {
+  return (d ?? "")
+    .split(/\r?\n/)
+    .map((b) => b.replace(/^\s*[-•+*]\s*/, "").trim())
+    .filter(Boolean)
+    .slice(0, 6);
 }
 
 function olah(p: RawProduct, kx: PetaKonvexa = null): ProductDetail {
@@ -189,6 +213,10 @@ function olah(p: RawProduct, kx: PetaKonvexa = null): ProductDetail {
     image: images[0]?.url ?? null,
     // Produk tanpa varian = stok tidak dicatat (katalog/pricelist), jadi tidak ditandai habis.
     inStock: variants.length === 0 || variants.some((v) => v.stock > 0),
+    hargaCoret: p.harga_coret,
+    label: p.label,
+    satuan: p.satuan,
+    poin: poinDeskripsi(p.description),
     images,
     variants,
     sizes: [...new Set(variants.map((v) => v.size).filter(Boolean))].sort(urutUkuran),
@@ -207,8 +235,8 @@ async function _getProducts(): Promise<ProductCard[]> {
   const list = data as unknown as RawProduct[];
   const kx = await petaKonvexa(list);
   return list.map((p) => olah(p, kx)).map(
-    ({ id, name, slug, category, minPrice, maxPrice, colors, image, inStock }) =>
-      ({ id, name, slug, category, minPrice, maxPrice, colors, image, inStock }),
+    ({ id, name, slug, category, minPrice, maxPrice, colors, image, inStock, hargaCoret, label, satuan, poin }) =>
+      ({ id, name, slug, category, minPrice, maxPrice, colors, image, inStock, hargaCoret, label, satuan, poin }),
   );
 }
 

@@ -11,6 +11,9 @@ export type ProductValues = {
   category_id: string | null;
   base_price: number;
   is_active: boolean;
+  harga_coret?: number | null;
+  label?: string | null;
+  satuan?: string | null;
 };
 
 export const inputClass =
@@ -84,6 +87,27 @@ export function ProductForm({
           className={inputClass}
         />
       </label>
+
+      <fieldset className="rounded-lg border border-line p-4">
+        <legend className="px-1 text-sm font-medium">Tampilan pricelist (opsional)</legend>
+        <p className="mb-3 text-xs text-muted">
+          Dipakai bila kategorinya bertampilan Pricelist (mis. Custom Jersey). Setiap baris deskripsi tampil sebagai poin &ldquo;+ …&rdquo; di kartu.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium">Harga coret (Rp)</span>
+            <input name="harga_coret" inputMode="numeric" defaultValue={product?.harga_coret ? product.harga_coret.toLocaleString("id-ID") : ""} placeholder="275.000" className={inputClass} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium">Label</span>
+            <input name="label" maxLength={30} defaultValue={product?.label ?? ""} placeholder="BEST VALUE" className={inputClass} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium">Satuan harga</span>
+            <input name="satuan" maxLength={20} defaultValue={product?.satuan ?? ""} placeholder="per pcs" className={inputClass} />
+          </label>
+        </div>
+      </fieldset>
 
       {product && (
         <label className="block">

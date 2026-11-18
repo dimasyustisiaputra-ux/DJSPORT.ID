@@ -22,6 +22,9 @@ export async function simpanProduk(productId: string | null, _prev: ActionState,
   const category_id = String(formData.get("category_id") ?? "") || null;
   const base_price = parseRupiah(formData.get("base_price"));
   const is_active = formData.get("is_active") === "on";
+  const harga_coret = String(formData.get("harga_coret") ?? "").trim() ? parseRupiah(formData.get("harga_coret")) : null;
+  const label = String(formData.get("label") ?? "").trim().slice(0, 30) || null;
+  const satuan = String(formData.get("satuan") ?? "").trim().slice(0, 20) || null;
   let slug = slugify(String(formData.get("slug") ?? "") || name);
 
   if (!name) return { error: "Nama produk wajib diisi." };
@@ -32,7 +35,7 @@ export async function simpanProduk(productId: string | null, _prev: ActionState,
   const { data: bentrok } = await supabase.from("products").select("id").eq("slug", slug).maybeSingle();
   if (bentrok && bentrok.id !== productId) slug = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 
-  const data = { name, slug, description, category_id, base_price, is_active, updated_at: new Date().toISOString() };
+  const data = { name, slug, description, category_id, base_price, harga_coret, label, satuan, is_active, updated_at: new Date().toISOString() };
 
   if (productId) {
     const { error } = await supabase.from("products").update(data).eq("id", productId);

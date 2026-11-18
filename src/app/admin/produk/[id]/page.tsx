@@ -39,7 +39,7 @@ export default async function UbahProdukPage({ params, searchParams }: PageProps
   const { supabase } = await requireAdmin();
 
   const [{ data: product }, { data: categories }, { data: variants }, { data: images }] = await Promise.all([
-    supabase.from("products").select("id, name, slug, description, category_id, base_price, is_active, konvexa_produk_id").eq("id", id).maybeSingle(),
+    supabase.from("products").select("id, name, slug, description, category_id, base_price, harga_coret, label, satuan, is_active, konvexa_produk_id").eq("id", id).maybeSingle(),
     supabase.from("categories").select("id, name, parent_id").order("sort_order").order("name"),
     supabase.from("product_variants").select("id, color_name, color_hex, size, sku, price, stock, is_active, konvexa_produk_id").eq("product_id", id),
     supabase.from("product_images").select("id, url, color_name, sort_order").eq("product_id", id).order("sort_order"),

@@ -5,6 +5,8 @@ import type { Metadata } from "next";
 import { getCategoryBySlug, getProducts } from "@/lib/catalog";
 import { produkDiKategori } from "@/lib/category-match";
 import { ProductGrid } from "@/components/product-grid";
+import { PricelistCards } from "@/components/pricelist-cards";
+import { getSiteSettings } from "@/lib/settings";
 
 export async function generateMetadata({ params }: PageProps<"/kategori/[slug]">): Promise<Metadata> {
   const { slug } = await params;
@@ -21,6 +23,9 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
   const { category, parent } = hasil;
   const produk = semua.filter((p) => produkDiKategori(p, category.slug));
   const subs = category.children.filter((s) => s.show_in_nav);
+  // Sub-kategori ikut tampilan induknya bila induknya berbentuk pricelist
+  const pricelist = category.tampilan === "pricelist" || parent?.tampilan === "pricelist";
+  const settings = pricelist ? await getSiteSettings() : null;
 
   return (
     <>
@@ -47,6 +52,9 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
       )}
 
       <div className="mt-8">
+        {settings ? (
+          <PricelistCards key={category.slug} products={produk} title={category.name} settings={settings} />
+        ) : (
         <ProductGrid
           // key: reset filter saat pindah kategori
           key={category.slug}
@@ -55,6 +63,7 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
           title={category.name}
           emptyText={`Belum ada produk di kategori ${category.name}. Lihat kategori lain atau kembali lagi nanti.`}
         />
+        )}
       </div>
     </>
   );
