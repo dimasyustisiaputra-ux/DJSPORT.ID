@@ -79,7 +79,8 @@ async function UserNav() {
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-20 border-b border-line bg-white/90 backdrop-blur">
+    // Header ikut tergulir bersama halaman (tidak menempel di atas). z-20 tetap ada agar dropdown kategori tampil di atas konten.
+    <header className="relative z-20 border-b border-line bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 md:gap-4">
         <div className="flex items-center gap-1">
           <Suspense fallback={<div className="h-10 w-10 md:hidden" />}>
