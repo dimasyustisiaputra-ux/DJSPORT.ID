@@ -28,7 +28,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-function GambarInput({
+export function GambarInput({
   label,
   hint,
   name,

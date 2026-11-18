@@ -3,8 +3,13 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { geserKategori, hapusKategori, simpanKategori, tambahKategori, type KategoriState } from "@/app/admin/kategori/actions";
 import { inputClass, Notice } from "@/components/admin/product-form";
+import { GambarInput } from "@/components/admin/banner-form";
 
-type AdminCategoryBase = { id: string; name: string; slug: string; show_in_nav: boolean; tampilan: "grid" | "pricelist"; produk: number };
+type AdminCategoryBase = { id: string; name: string; slug: string; show_in_nav: boolean; tampilan: "grid" | "pricelist";
+  banner_url: string | null;
+  banner_mobile_url: string | null;
+  produk: number;
+};
 export type AdminCategory = AdminCategoryBase & { children: AdminCategoryBase[] };
 
 function TambahForm({ parentId, placeholder, label }: { parentId: string | null; placeholder: string; label: string }) {
@@ -41,6 +46,7 @@ function Baris({
 }) {
   const isSub = parentId !== null;
   const [edit, setEdit] = useState(false);
+  const [banner, setBanner] = useState({ d: cat.banner_url, m: cat.banner_mobile_url });
   const [state, action, pending] = useActionState<KategoriState, FormData>(async (prev, formData) => {
     const res = await simpanKategori(cat.id, prev, formData);
     if (res.ok) setEdit(false); // tutup form setelah berhasil disimpan
@@ -108,6 +114,22 @@ function Baris({
               </select>
             </label>
           </div>
+          <div className="grid gap-4 border-t border-line pt-3 sm:grid-cols-2">
+            <GambarInput
+              label="Banner kategori — desktop (opsional)"
+              hint="Tampil di atas halaman kategori. Disarankan 1800×600 px (3:1)."
+              name="banner_url"
+              value={banner.d}
+              onChange={(url) => setBanner((b) => ({ ...b, d: url }))}
+            />
+            <GambarInput
+              label="Banner kategori — HP (opsional)"
+              hint="Disarankan 1080×1080 px (kotak). Bila kosong, HP memakai banner desktop."
+              name="banner_mobile_url"
+              value={banner.m}
+              onChange={(url) => setBanner((b) => ({ ...b, m: url }))}
+            />
+          </div>
           <div className="flex gap-2">
             <button disabled={pending} className="brand-gradient rounded-md px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
               {pending ? "Menyimpan…" : "Simpan"}
@@ -121,6 +143,9 @@ function Baris({
             <p className={`truncate ${isSub ? "font-medium" : "font-semibold"}`}>
               {isSub && <span className="mr-1 text-muted">↳</span>}
               {cat.name}
+              {(cat.banner_url || cat.banner_mobile_url) && (
+                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-600">ada banner</span>
+              )}
               {cat.tampilan === "pricelist" && (
                 <span className="ml-2 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-normal text-brand-orange">pricelist</span>
               )}

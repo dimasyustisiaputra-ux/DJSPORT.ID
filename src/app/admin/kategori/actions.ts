@@ -42,11 +42,14 @@ export async function simpanKategori(id: string, _prev: KategoriState, formData:
   const slug = slugify(String(formData.get("slug") ?? "") || name);
   const show_in_nav = formData.get("show_in_nav") === "on";
   const tampilan = formData.get("tampilan") === "pricelist" ? "pricelist" : "grid";
+  const banner_url = String(formData.get("banner_url") ?? "").trim() || null;
+  const banner_mobile_url = String(formData.get("banner_mobile_url") ?? "").trim() || null;
   const parentRaw = formData.get("parent_id");
   if (!name) return { error: "Nama kategori wajib diisi." };
   if (!slug) return { error: "Alamat URL tidak valid." };
 
-  const data: Record<string, unknown> = { name, slug, show_in_nav, tampilan };
+  const data: Record<string, unknown> = { name, slug, show_in_nav, tampilan, banner_url, banner_mobile_url };
+  const { data: lama } = await supabase.from("categories").select("banner_url, banner_mobile_url").eq("id", id).single();
   if (parentRaw !== null) {
     const parent_id = String(parentRaw) || null;
     if (parent_id === id) return { error: "Kategori tidak bisa menjadi induk dirinya sendiri." };
@@ -55,12 +58,27 @@ export async function simpanKategori(id: string, _prev: KategoriState, formData:
 
   const { error } = await supabase.from("categories").update(data).eq("id", id);
   if (error) return { error: pesanError(error.message) };
+  // Hapus file banner lama yang sudah diganti/dihapus dari storage
+  const usang = [lama?.banner_url, lama?.banner_mobile_url]
+    .filter((u): u is string => Boolean(u) && u !== banner_url && u !== banner_mobile_url)
+    .map(pathBanner)
+    .filter(Boolean) as string[];
+  if (usang.length) await supabase.storage.from("banners").remove(usang);
   segarkan();
   return { ok: "Disimpan." };
 }
 
+function pathBanner(url: string | null) {
+  if (!url) return null;
+  const i = url.indexOf("/banners/");
+  return i === -1 ? null : decodeURIComponent(url.slice(i + "/banners/".length));
+}
+
 export async function hapusKategori(id: string) {
   const { supabase } = await requireAdmin();
+  const { data: b } = await supabase.from("categories").select("banner_url, banner_mobile_url").eq("id", id).single();
+  const file = [pathBanner(b?.banner_url ?? null), pathBanner(b?.banner_mobile_url ?? null)].filter(Boolean) as string[];
+  if (file.length) await supabase.storage.from("banners").remove(file);
   // Produk di kategori ini (dan sub-kategorinya) otomatis menjadi "tanpa kategori"; produknya tidak terhapus.
   await supabase.from("categories").delete().eq("id", id);
   segarkan();

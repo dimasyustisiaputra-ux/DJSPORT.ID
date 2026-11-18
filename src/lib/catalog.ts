@@ -9,14 +9,15 @@ export type TampilanKategori = "grid" | "pricelist";
 export type CategoryNode = Category & {
   show_in_nav: boolean;
   tampilan: TampilanKategori;
-  children: (Category & { show_in_nav: boolean; tampilan: TampilanKategori })[];
+  banner: { desktop: string | null; mobile: string | null };
+  children: (Category & { show_in_nav: boolean; tampilan: TampilanKategori; banner: { desktop: string | null; mobile: string | null } })[];
 };
 
 /** Kategori utama beserta sub-kategorinya (untuk navbar dropdown), sesuai urutan di admin. */
 async function _getCategories(): Promise<CategoryNode[]> {
   const { data, error } = await createPublicClient()
     .from("categories")
-    .select("id, name, slug, parent_id, show_in_nav, tampilan")
+    .select("id, name, slug, parent_id, show_in_nav, tampilan, banner_url, banner_mobile_url")
     .order("sort_order")
     .order("name");
   if (error) throw error;
@@ -27,9 +28,10 @@ async function _getCategories(): Promise<CategoryNode[]> {
     slug: c.slug,
     show_in_nav: c.show_in_nav,
     tampilan: c.tampilan as TampilanKategori,
+    banner: { desktop: c.banner_url, mobile: c.banner_mobile_url },
     children: data
       .filter((s) => s.parent_id === c.id)
-      .map((s) => ({ id: s.id, name: s.name, slug: s.slug, show_in_nav: s.show_in_nav, tampilan: s.tampilan as TampilanKategori })),
+      .map((s) => ({ id: s.id, name: s.name, slug: s.slug, show_in_nav: s.show_in_nav, tampilan: s.tampilan as TampilanKategori, banner: { desktop: s.banner_url, mobile: s.banner_mobile_url } })),
   }));
 }
 

@@ -53,7 +53,14 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
 
       <div className="mt-8">
         {settings ? (
-          <PricelistCards key={category.slug} products={produk} title={category.name} settings={settings} />
+          <PricelistCards
+            key={category.slug}
+            products={produk}
+            title={category.name}
+            // sub-kategori tanpa banner sendiri memakai banner induknya
+            banner={category.banner.desktop || category.banner.mobile || !parent ? category.banner : parent.banner}
+            settings={settings}
+          />
         ) : (
         <ProductGrid
           // key: reset filter saat pindah kategori

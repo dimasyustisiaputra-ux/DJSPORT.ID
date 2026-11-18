@@ -11,13 +11,44 @@ import { linkWhatsApp, type SiteSettings } from "@/lib/whatsapp";
  * Tampilan "pricelist": produk sebagai kartu paket yang bisa dipilih, lalu dipesan lewat WhatsApp.
  * Dipakai untuk kategori dengan tampilan "pricelist" (mis. Custom Jersey) yang hanya dijual lewat sales.
  */
+type BannerGambar = { desktop: string | null; mobile: string | null };
+
+/** Banner kategori dari admin (Kategori → Ubah). Tanpa gambar: banner desain brand dengan nama kategori. */
+function BannerKategori({ title, banner }: { title: string; banner: BannerGambar }) {
+  const hp = banner.mobile ?? banner.desktop;
+  if (!banner.desktop && !hp) {
+    return (
+      <div aria-hidden className="brand-gradient relative grid aspect-[2/1] place-items-center overflow-hidden rounded-2xl sm:aspect-[3/1]">
+        <div className="brand-stripes absolute inset-0" />
+        <p className="relative px-4 text-center font-display text-3xl font-bold uppercase tracking-tight sm:text-5xl">{title}</p>
+      </div>
+    );
+  }
+  return (
+    <>
+      {hp && (
+        <div className={`relative overflow-hidden rounded-2xl bg-white/5 sm:hidden ${banner.mobile ? "aspect-square" : "aspect-[3/1]"}`}>
+          <Image src={hp} alt={title} fill sizes="100vw" className="object-cover" priority />
+        </div>
+      )}
+      {banner.desktop && (
+        <div className="relative hidden aspect-[3/1] overflow-hidden rounded-2xl bg-white/5 sm:block">
+          <Image src={banner.desktop} alt={title} fill sizes="(min-width: 768px) 768px, 100vw" className="object-cover" priority />
+        </div>
+      )}
+    </>
+  );
+}
+
 export function PricelistCards({
   products,
   title,
+  banner,
   settings,
 }: {
   products: ProductCard[];
   title: string;
+  banner: BannerGambar;
   settings: SiteSettings;
 }) {
   const [pilih, setPilih] = useState(products[0]?.id ?? null);
@@ -48,8 +79,8 @@ export function PricelistCards({
   return (
     <section className="pricelist-panel relative overflow-hidden rounded-3xl px-4 py-8 text-white sm:px-8 md:py-12">
       <div className="relative mx-auto max-w-3xl">
-        <h1 className="font-display text-3xl font-bold md:text-4xl">{title}</h1>
-        <p className="mt-2 text-sm text-white/70">Pilih model, lalu konsultasikan desain, ukuran, dan jumlah tim Anda dengan sales kami lewat WhatsApp.</p>
+        <h1 className="sr-only">{title}</h1>
+        <BannerKategori title={title} banner={banner} />
 
         <div role="radiogroup" aria-label={`Pilihan ${title}`} className="mt-8 space-y-5">
           {products.map((p, i) => {
