@@ -51,7 +51,8 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
         </div>
       )}
 
-      <div className={pricelist ? "mt-5" : "mt-8"}>
+      {/* pricelist: jarak breadcrumb → banner sama dengan jarak header → breadcrumb */}
+      <div className={pricelist ? "mt-3 md:mt-4" : "mt-8"}>
         {settings ? (
           <PricelistCards
             key={category.slug}
@@ -82,7 +83,7 @@ async function Isi({ params }: Pick<PageProps<"/kategori/[slug]">, "params">) {
 export default function KategoriPage({ params }: PageProps<"/kategori/[slug]">) {
   return (
     <main className="flex-1">
-      <div className="mx-auto max-w-6xl px-4 py-8 md:py-12">
+      <div className="mx-auto max-w-6xl px-4 pb-8 pt-3 md:pb-12 md:pt-4">
         <Suspense
           fallback={
             <div className="space-y-6">
